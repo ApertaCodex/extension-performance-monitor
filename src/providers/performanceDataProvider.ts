@@ -222,7 +222,8 @@ export class PerformanceDataProvider implements vscode.TreeDataProvider<Performa
         const item = new PerformanceTreeItem(
             metric.displayName,
             TreeItemType.EXTENSION,
-            vscode.TreeItemCollapsibleState.Collapsed
+            vscode.TreeItemCollapsibleState.Collapsed,
+            'extension' // Explicitly set contextValue to match menu condition
         );
 
         item.extensionId = metric.id;
