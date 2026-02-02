@@ -1,0 +1,197 @@
+{
+    "name": "extension-performance-monitor",
+    "displayName": "Extension Performance Monitor",
+    "description": "Monitor CPU and RAM consumption for all VS Code extensions with real-time tracking, performance insights, and resource usage analytics",
+    "version": "0.0.14",
+    "publisher": "apertacodex",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/apertacodex/extension-performance-monitor.git"
+    },
+    "bugs": {
+        "url": "https://github.com/apertacodex/extension-performance-monitor/issues"
+    },
+    "homepage": "https://github.com/apertacodex/extension-performance-monitor#readme",
+    "engines": {
+        "vscode": "^1.108.0"
+    },
+    "categories": [
+        "Other",
+        "Debuggers",
+        "Visualization"
+    ],
+    "keywords": [
+        "performance",
+        "monitoring",
+        "cpu",
+        "memory",
+        "ram",
+        "extensions",
+        "analytics",
+        "profiling"
+    ],
+    "main": "./out/extension.js",
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "contributes": {
+        "commands": [
+            {
+                "command": "extperf.showPerformanceView",
+                "title": "Show Performance Monitor",
+                "category": "Extension Performance"
+            },
+            {
+                "command": "extperf.showResourcesPage",
+                "title": "Show Extension Resources",
+                "category": "Extension Performance"
+            },
+            {
+                "command": "extperf.refreshMetrics",
+                "title": "Refresh Metrics",
+                "category": "Extension Performance",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "extperf.exportReport",
+                "title": "Export Performance Report",
+                "category": "Extension Performance"
+            },
+            {
+                "command": "extperf.clearHistory",
+                "title": "Clear Performance History",
+                "category": "Extension Performance"
+            },
+            {
+                "command": "extperf.toggleMonitoring",
+                "title": "Toggle Performance Monitoring",
+                "category": "Extension Performance"
+            },
+            {
+                "command": "extperf.disableExtension",
+                "title": "Disable Extension",
+                "category": "Extension Performance",
+                "icon": "$(circle-slash)"
+            },
+            {
+                "command": "extperf.enableExtension",
+                "title": "Enable Extension",
+                "category": "Extension Performance",
+                "icon": "$(check)"
+            }
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "extensionPerformance",
+                    "name": "Extension Performance",
+                    "when": "extperf.monitoringEnabled"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "extperf.refreshMetrics",
+                    "when": "view == extensionPerformance",
+                    "group": "navigation"
+                },
+                {
+                    "command": "extperf.showResourcesPage",
+                    "when": "view == extensionPerformance",
+                    "group": "navigation",
+                    "icon": "$(table)"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "extperf.disableExtension",
+                    "when": "view == extensionPerformance && viewItem == extension",
+                    "group": "inline"
+                },
+                {
+                    "command": "extperf.enableExtension",
+                    "when": "view == extensionPerformance && viewItem == extension",
+                    "group": "inline"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "extperf.refreshMetrics",
+                    "when": "extperf.monitoringEnabled"
+                },
+                {
+                    "command": "extperf.showResourcesPage",
+                    "when": "extperf.monitoringEnabled"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Extension Performance Monitor",
+            "properties": {
+                "extperf.monitoringInterval": {
+                    "type": "number",
+                    "default": 5000,
+                    "minimum": 1000,
+                    "maximum": 60000,
+                    "description": "Monitoring interval in milliseconds (1-60 seconds)"
+                },
+                "extperf.enableAutoMonitoring": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically start monitoring when VS Code opens"
+                },
+                "extperf.showStatusBarItem": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show performance summary in status bar"
+                },
+                "extperf.alertThresholds.cpu": {
+                    "type": "number",
+                    "default": 80,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "CPU usage alert threshold (percentage)"
+                },
+                "extperf.alertThresholds.memory": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 1,
+                    "description": "Memory usage alert threshold (MB)"
+                },
+                "extperf.historyRetentionDays": {
+                    "type": "number",
+                    "default": 7,
+                    "minimum": 1,
+                    "maximum": 30,
+                    "description": "Number of days to retain performance history"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "package": "vsce package",
+        "lint": "eslint src --ext ts",
+        "test": "vscode-test"
+    },
+    "devDependencies": {
+        "@types/node": "^25.2.0",
+        "@types/vscode": "^1.108.1",
+        "@typescript-eslint/eslint-plugin": "^8.54.0",
+        "@typescript-eslint/parser": "^8.54.0",
+        "@vscode/test-cli": "^0.0.12",
+        "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.7.1",
+        "eslint": "^9.39.2",
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "pidusage": "^3.0.2",
+        "ps-tree": "^1.2.0"
+    },
+    "icon": "images/icon.png"
+}
