@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import pidusage, { Stat as PidusageStat } from 'pidusage';
 import psTree from 'ps-tree';
 
@@ -16,6 +15,20 @@ export interface ExtensionSubprocessStats {
     totalMemory: number; // MB
     processCount: number;
     processes: SubprocessUsage[];
+}
+
+export interface ExtensionLike {
+    id: string;
+    extensionPath: string;
+    packageJSON?: {
+        displayName?: string;
+    };
+}
+
+export interface CollectSubprocessStatsOptions {
+    pidToExtensionId?: ReadonlyMap<number, string>;
+    rootPid?: number;
+    debug?: boolean;
 }
 
 interface ExtensionIndexEntry {
@@ -49,6 +62,28 @@ function getProcessTree(rootPid: number): Promise<PsTreeEntry[]> {
     });
 }
 
+async function getAllDescendants(rootPid: number): Promise<PsTreeEntry[]> {
+    const allChildren: PsTreeEntry[] = [];
+    const visited = new Set<number>();
+
+    async function collect(pid: number): Promise<void> {
+        if (visited.has(pid)) return;
+        visited.add(pid);
+
+        const children = await getProcessTree(pid);
+        for (const child of children) {
+            const childPid = Number(child.PID);
+            if (Number.isFinite(childPid) && childPid > 0) {
+                allChildren.push(child);
+                await collect(childPid);
+            }
+        }
+    }
+
+    await collect(rootPid);
+    return allChildren;
+}
+
 function resolveCommand(entry: PsTreeEntry): string {
     return entry.COMMAND_LINE || entry.COMMAND || entry.COMM || '';
 }
@@ -72,8 +107,17 @@ function findBestMatch(command: string, extensions: ExtensionIndexEntry[]): Exte
     return best;
 }
 
+function findBestMatchWithDebug(command: string, extensions: ExtensionIndexEntry[]): ExtensionIndexEntry | undefined {
+    const match = findBestMatch(command, extensions);
+    if (match) {
+        console.error(`[DEBUG] Matched command "${command}" to extension "${match.id}" (${match.path})`);
+    }
+    return match;
+}
+
 export async function collectSubprocessStats(
-    extensions: readonly vscode.Extension<unknown>[]
+    extensions: readonly ExtensionLike[],
+    options?: CollectSubprocessStatsOptions
 ): Promise<Map<string, ExtensionSubprocessStats>> {
     const statsByExtension = new Map<string, ExtensionSubprocessStats>();
     const indexedExtensions: ExtensionIndexEntry[] = extensions.map((extension) => ({
@@ -83,7 +127,19 @@ export async function collectSubprocessStats(
         idLower: extension.id.toLowerCase()
     }));
 
-    const children = await getProcessTree(process.pid);
+    const extensionsById = new Map<string, ExtensionIndexEntry>();
+    for (const entry of indexedExtensions) {
+        extensionsById.set(entry.id, entry);
+    }
+
+    const rootPid = options?.rootPid ?? process.pid;
+    const children = await getAllDescendants(rootPid);
+    if (options?.debug) {
+        console.error(`[DEBUG] Root PID ${rootPid} has ${children.length} descendants:`);
+        children.forEach(child => {
+            console.error(`  PID ${child.PID}: ${resolveCommand(child)}`);
+        });
+    }
     if (children.length === 0) {
         return statsByExtension;
     }
@@ -116,8 +172,19 @@ export async function collectSubprocessStats(
         }
 
         const command = resolveCommand(child);
-        const match = findBestMatch(command, indexedExtensions);
+        let match: ExtensionIndexEntry | undefined;
+        const forcedExtensionId = options?.pidToExtensionId?.get(pid);
+        if (forcedExtensionId) {
+            match = extensionsById.get(forcedExtensionId);
+        } else {
+            match = options?.debug ? findBestMatchWithDebug(command, indexedExtensions) : findBestMatch(command, indexedExtensions);
+        }
         if (!match) {
+            // Debug: log unmatched processes
+            if (options?.debug) {
+                console.error(`[DEBUG] Unmatched process PID ${pid}: ${command}`);
+                console.error(`[DEBUG] Available extension paths:`, indexedExtensions.map(e => e.path));
+            }
             continue;
         }
 

@@ -28,6 +28,7 @@ node_modules/**
 .vscode/tasks.json
 .vscode/launch.json
 .vscode/extensions.json
+.env
 !node_modules/pidusage/**
 !node_modules/ps-tree/**
 !node_modules/safe-buffer/**

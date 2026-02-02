@@ -2,7 +2,7 @@
     "name": "extension-performance-monitor",
     "displayName": "Extension Performance Monitor",
     "description": "Monitor CPU and RAM consumption for all VS Code extensions with real-time tracking, performance insights, and resource usage analytics",
-    "version": "0.0.22",
+    "version": "0.0.25",
     "publisher": "apertacodex",
     "license": "MIT",
     "repository": {
@@ -176,7 +176,9 @@
         "watch": "tsc -watch -p ./",
         "package": "vsce package",
         "lint": "eslint src --ext ts",
-        "test": "vscode-test"
+        "test": "vscode-test",
+        "test:metrics": "npm run compile && node ./out/scripts/verifyMetrics.js",
+        "list:extensions": "npm run compile && node ./out/scripts/listExtensions.js"
     },
     "devDependencies": {
         "@types/node": "^25.2.0",
